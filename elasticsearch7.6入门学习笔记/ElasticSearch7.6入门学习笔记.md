@@ -2,13 +2,19 @@
 
 
 
-笔记参考改编自原文：https://www.kuangstudy.com/bbs/1354069127022583809
-
-视频教程：https://www.bilibili.com/video/BV17a4y1x7zq?vd_source=763b2ec1aba2026d6d6983dd3bd86607
+本笔记主要参考自原文：https://www.kuangstudy.com/bbs/1354069127022583809
 
 
 
-> 笔记记录 B站狂神说Java的ElasticSearch课程：https://www.bilibili.com/video/BV17a4y1x7zq
+学习视频教程：
+
+狂神说Java的ElasticSearch教程：https://www.bilibili.com/video/BV17a4y1x7zq?vd_source=763b2ec1aba2026d6d6983dd3bd86607
+
+尚硅谷ElasticSearch教程：https://www.bilibili.com/video/BV1hh411D7sb
+
+
+
+学习代码：https://github.com/caojx-git/eleasticsearch-springboot-learn
 
 
 
@@ -1646,6 +1652,66 @@ GET blog/user/_search
 
 <img src="img/20201203150652.png" style="zoom:80%;" align=left  />
 
+
+
+
+
+#### 11、聚合查询
+
+```java
+// 按照年龄进行分组，统计每个年龄的数量
+GET /kuang_index/_search
+{ 
+  "aggs": {  // 聚合操作
+    "age_group": { // 名称，随意起名
+      "terms": { // 分组， 相当于sql中的group by
+        "field": "age" // 分组字段
+      }
+    }
+  },
+  "size": 0 // 不返回原始数据
+}
+
+
+```
+
+
+
+<img src="img/image-20220620093341978.png" alt="image-20220620093341978" style="zoom:50%;" align=left />
+
+
+
+
+
+```json
+// 求年龄的平均值
+GET /kuang_index/_search
+{ 
+  "aggs": {  
+    "age_avg": {
+      "avg": { // 平均值
+        "field": "age"
+      }
+    }
+  },
+  "size": 0
+}
+```
+
+
+
+<img src="img/image-20220620093959024.png" alt="image-20220620093959024" style="zoom:50%;" align=left />
+
+
+
+
+
+相关的聚合操作会提示
+
+<img src="img/image-20220620093419050.png" alt="image-20220620093419050" style="zoom:50%;" align=left />
+
+
+
 # 七、SpringBoot整合
 
 
@@ -2099,7 +2165,7 @@ public void testBulk() throws IOException {
 
 
 
-##### 6、文档的查询
+##### 7、文档的查询
 
 
 
@@ -2153,6 +2219,49 @@ public void testSearch() throws IOException {
         System.out.println(documentFields.getSourceAsMap());
     }
 }
+```
+
+
+
+##### 8、聚合查询
+
+
+
+```java
+ // 文档聚合查询
+    @Test
+    public void testAggregation() throws IOException {
+        // 1.创建查询请求对象
+        SearchRequest request = new SearchRequest("kuang_index");
+
+        // 2.构建聚合搜索条件
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+
+        // 根据年龄进行聚合查询
+        // 查询年龄的最大值
+        AggregationBuilder aggregationBuilder = AggregationBuilders.max("maxAge").field("age");
+
+        // AggregationBuilders.terms 相当于sql中的group by
+//        AggregationBuilder aggregationBuilder = AggregationBuilders.terms("ageGroup").field("age");
+        builder.aggregation(aggregationBuilder);
+
+
+        // 3.添加条件到请求
+        builder.timeout(new TimeValue(60, TimeUnit.SECONDS));
+        request.source(builder);
+
+        // 4.客户端查询请求
+        SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
+
+        // 5.查看返回结果
+        SearchHits hits = response.getHits();
+
+        System.out.println(JSON.toJSONString(response.getAggregations()));
+        System.out.println("=======================");
+        for (SearchHit hit : hits) {
+            System.out.println(hit.getSourceAsString());
+        }
+    }
 ```
 
 

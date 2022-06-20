@@ -27,6 +27,8 @@ import org.elasticsearch.index.query.QueryBuilders;
 import org.elasticsearch.index.query.TermQueryBuilder;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.FetchSourceContext;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
@@ -226,6 +228,42 @@ public class SpringbootElasticsearchApplicationTests {
         System.out.println("=======================");
         for (SearchHit documentFields : hits.getHits()) {
             System.out.println(documentFields.getSourceAsMap());
+        }
+    }
+
+
+    // 文档聚合查询
+    @Test
+    public void testAggregation() throws IOException {
+        // 1.创建查询请求对象
+        SearchRequest request = new SearchRequest("kuang_index");
+
+        // 2.构建聚合搜索条件
+        SearchSourceBuilder builder = new SearchSourceBuilder();
+
+        // 根据年龄进行聚合查询
+        // 查询年龄的最大值
+        AggregationBuilder aggregationBuilder = AggregationBuilders.max("maxAge").field("age");
+
+        // AggregationBuilders.terms 相当于sql中的group by
+//        AggregationBuilder aggregationBuilder = AggregationBuilders.terms("ageGroup").field("age");
+        builder.aggregation(aggregationBuilder);
+
+
+        // 3.添加条件到请求
+        builder.timeout(new TimeValue(60, TimeUnit.SECONDS));
+        request.source(builder);
+
+        // 4.客户端查询请求
+        SearchResponse response = restHighLevelClient.search(request, RequestOptions.DEFAULT);
+
+        // 5.查看返回结果
+        SearchHits hits = response.getHits();
+
+        System.out.println(JSON.toJSONString(response.getAggregations()));
+        System.out.println("=======================");
+        for (SearchHit hit : hits) {
+            System.out.println(hit.getSourceAsString());
         }
     }
 }
